@@ -14,23 +14,39 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Set up Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build Debug APK
+      - name: Find Gradle wrapper
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          echo "Repository files:"
+          ls -la
+          find . -maxdepth 5 \( -name gradlew -o -name gradlew.bat \)
+
+      - name: Build APK
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          elif [ -f "./SmartTVLauncher/gradlew" ]; then
+            cd SmartTVLauncher
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          else
+            echo "ERROR: Gradle wrapper not found."
+            echo "The Android project structure must be checked."
+            exit 1
+          fi
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: GoogleTV-Launcher-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            SmartTVLauncher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
